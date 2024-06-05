@@ -3,8 +3,7 @@
 use std::fmt::Formatter;
 use anyhow::bail;
 use bytes::{BufMut, Bytes, BytesMut};
-use serde::de::{Error, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone)]
 pub struct Header {
@@ -173,7 +172,6 @@ mod tests {
         let [ninth, ten] = 1500u16.to_be_bytes();
         let [eleventh, twelve] = 5000u16.to_be_bytes();
         let bytes = [first, second, third, fourth, fifth, sixth, seventh, eight, ninth, ten, eleventh, twelve];
-        use bincode::deserialize;
         let h = Header::deserialize(&bytes);
         println!("{:?}", h);
     }
@@ -196,7 +194,6 @@ mod tests {
         let [ninth, ten] = 1500u16.to_be_bytes();
         let [eleventh, twelve] = 5000u16.to_be_bytes();
         let bytes = [first, second, third, fourth, fifth, sixth, seventh, eight, ninth, ten, eleventh, twelve];
-        use bincode::deserialize;
         let h = Header::deserialize(&bytes).unwrap();
         let result = h.serialize().unwrap();
         let bytes = bytes.to_vec();
