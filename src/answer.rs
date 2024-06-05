@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+#![allow(dead_code, unused)]
 use crate::message::{Class, Label, Ty};
 
 pub struct Answer {

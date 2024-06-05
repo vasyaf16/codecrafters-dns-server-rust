@@ -1,4 +1,4 @@
-use std::io::Read;
+
 use bytes::{BufMut, BytesMut};
 use nom::AsBytes;
 use crate::message::{Class, Label, Ty};
@@ -19,7 +19,7 @@ impl Question {
     }
     pub fn serialize(self) -> BytesMut {
         let mut buf = BytesMut::new();
-        let mut v = self.name;
+        let v = self.name;
         // let _val = v.into_iter().flat_map(|l| l.as_bytes()).collect::<Vec<_>>();
         buf.extend(v.iter().flat_map(|l| l.as_bytes()));
         buf.put_u8(0);
@@ -46,7 +46,7 @@ mod test {
     fn test_serialize_question() {
         let question = Question::for_question_test();
         let expected = b"\x0ccodecrafters\x02io\011";
-        let expected = BytesMut::from(&expected[..]);
+        let _expected = BytesMut::from(&expected[..]);
         let got = question.serialize();
         println!("{:?}", got)
     }
