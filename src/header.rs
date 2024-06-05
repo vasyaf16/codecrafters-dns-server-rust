@@ -45,6 +45,10 @@ impl Header {
             ar_count,
         }
     }
+
+    pub fn increment_qd_count(&mut self) {
+        self.qd_count += 1;
+    }
     pub fn deserialize(v: &[u8]) -> anyhow::Result<Self> {
         if v.len() != 12 {
             bail!("headers len should be exactly 12 bytes long")
@@ -79,7 +83,7 @@ impl Header {
         };
         Ok(header)
     }
-    pub fn serialize(self) -> anyhow::Result<Bytes> {
+    pub fn serialize(self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::with_capacity(12);
         buffer.put_u16(self.id);
         let third_bite = 0u8
@@ -95,14 +99,14 @@ impl Header {
         buffer.put_u16(self.an_count);
         buffer.put_u16(self.ns_count);
         buffer.put_u16(self.ar_count);
-        Ok(buffer.freeze())
+        Ok(buffer)
     }
 }
 
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::Header;
+    use crate::header::Header;
 
     #[test]
     fn byte_shift() {
@@ -198,6 +202,7 @@ mod tests {
         let result = h.serialize().unwrap();
         let bytes = bytes.to_vec();
         let result = result.to_vec();
-        assert_eq!(bytes, result)
+        assert_eq!(bytes, result);
+
     }
 }
