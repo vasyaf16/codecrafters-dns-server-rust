@@ -159,9 +159,9 @@ impl Message {
     pub fn produce_full_default_message() -> Bytes {
         let mut header = Header::default();
         let question = Question::for_question_test();
-        header.increment_qd_count();
+        // header.increment_qd_count();
         let answer = Answer::for_third_test();
-        header.increment_an_count();
+        // header.increment_an_count();
         let message = Self::new(header,question,answer);
         println!("{:?}", &message);
         message.serialize()
