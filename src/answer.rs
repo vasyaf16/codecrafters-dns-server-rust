@@ -17,18 +17,18 @@ pub enum Data {
     A(u32),
 }
 
-impl Answer {
-
-    pub fn for_third_test() -> Self {
+impl Default for Answer {
+    fn default() -> Self {
         let name = "codecrafters.io";
         let ty = 1;
         let class = 1;
         let ttl = 60;
         let data = 0x08080808u32;
-        let x = Self::new(name,ty,class,ttl,data);
-        println!("{:?}", x);
-        x
+        Self::new(name,ty,class,ttl,data)
     }
+}
+impl Answer {
+
 
     pub fn new<A: AsRef<str>>(name: A, ty: u16, class: u16, ttl: u32, data: u32) -> Self {
         let name = Labels::from_domain(name.as_ref());

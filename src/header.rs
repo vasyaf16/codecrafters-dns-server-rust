@@ -7,19 +7,19 @@ use bytes::{BufMut, Bytes, BytesMut};
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Clone)]
 pub struct Header {
-    id: u16, // 16 bits
-    qr: bool, // 1 bit
-    opcode: u8, // 4 bits
-    aa: bool, // 1 bit
-    tc: bool, // 1 bit
-    rd: bool, // 1 bit
-    ra: bool, // 1 bit
-    reserved: u8, // 3 bits
-    r_code: u8, // 4 bits
-    qd_count: u16, // 16 bits
-    an_count: u16, // 16 bits
-    ns_count: u16, // 16 bits
-    ar_count: u16, // 16 bits
+    pub id: u16, // 16 bits
+    pub qr: bool, // 1 bit
+    pub opcode: u8, // 4 bits
+    pub aa: bool, // 1 bit
+    pub tc: bool, // 1 bit
+    pub rd: bool, // 1 bit
+    pub ra: bool, // 1 bit
+    pub reserved: u8, // 3 bits
+    pub r_code: u8, // 4 bits
+    pub qd_count: u16, // 16 bits
+    pub an_count: u16, // 16 bits
+    pub ns_count: u16, // 16 bits
+    pub ar_count: u16, // 16 bits
 }
 impl Default for Header {
     fn default() -> Self {
@@ -28,6 +28,25 @@ impl Default for Header {
 }
 
 impl Header {
+
+    pub fn set_id(&mut self, id: u16) {
+        self.id = id
+    }
+
+    pub fn set_opcode(&mut self, opcode: u8) {
+        self.opcode = opcode;
+        if opcode != 0 {
+            self.r_code = 4
+        };
+    }
+
+    pub fn set_rd(&mut self, rd: bool) {
+        self.rd = rd;
+    }
+
+    pub fn get_id_opcode_rd(&self) -> (u16, u8, bool) {
+        (self.id, self.opcode, self.rd)
+    }
     pub fn new(id: u16, qr: bool, opcode: u8, aa: bool, tc: bool, rd: bool, ra: bool, reserved: u8, r_code: u8, qd_count: u16, an_count: u16, ns_count: u16, ar_count: u16) -> Self {
         Self {
             id,
@@ -122,9 +141,9 @@ mod tests {
 
     #[test]
     fn op_code_shift() {
-        let val = 0b1101_1000u8;
-        let e = val >> 3 & 0xF;
-        assert_eq!(e, 0b00001011);
+        let val = 0b1_1000_000u8;
+        let e = val >> 3 & 0b0000_1111;
+        assert_eq!(e, 8);
     }
 
     #[test]

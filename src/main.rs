@@ -1,11 +1,11 @@
 // Uncomment this block to pass the first stage
 use std::net::UdpSocket;
-use bytes::BytesMut;
 
 mod header;
 mod question;
 mod message;
 mod answer;
+
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     println!("Logs from your program will appear here!");
@@ -18,13 +18,15 @@ fn main() {
         match udp_socket.recv_from(&mut buf) {
             Ok((size, source)) => {
                 println!("Received {} bytes from {}", size, source);
-                if size > 0 {
-                    println!("i am here");
-                    let parsed = header::Header::deserialize(&buf[..12]).unwrap();
-                    println!("{:#?}", parsed);
-                }
-                let response = message::Message::produce_full_default_message();
 
+                let parsed = header::Header::deserialize(&buf[..12]).unwrap();
+                let (id, opcode, rd) = parsed.get_id_opcode_rd();
+                let message = message::MessageBuilder::new()
+                    .with_custom_id(id)
+                    .with_custom_opcode(opcode)
+                    .with_custom_rd(rd)
+                    .finish();
+                let response = message.serialize();
                 udp_socket
                     .send_to(&response, source)
                     .expect("Failed to send response");

@@ -14,6 +14,44 @@ pub struct Message {
     answer: Answer,
 }
 
+pub struct MessageBuilder {
+    message: Message
+}
+
+impl MessageBuilder {
+    pub fn new() -> Self {
+        Self {message: Default::default()}
+    }
+    pub fn with_custom_id(mut self, id:u16) -> Self {
+        self.message.header.set_id(id);
+        self
+    }
+    pub fn with_custom_opcode(mut self, opcode: u8) -> Self {
+        self.message.header.set_opcode(opcode);
+        self
+    }
+
+    pub fn with_custom_rd(mut self, rd: bool) -> Self {
+        self.message.header.set_rd(rd);
+        self
+    }
+
+    pub fn finish(self) -> Message {
+        self.message
+    }
+}
+
+impl Default for Message {
+    fn default() -> Self {
+        let mut header = Header::default();
+        let question = Question::default();
+        let answer = Answer::default();
+        header.increment_qd_count();
+        header.increment_an_count();
+        Self {header,question,answer}
+    }
+}
+
 #[repr(u16)]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Class {
@@ -158,9 +196,9 @@ impl Message {
     }
     pub fn produce_full_default_message() -> BytesMut {
         let mut header = Header::default();
-        let question = Question::for_question_test();
+        let question: Question = Default::default();
         header.increment_qd_count();
-        let answer = Answer::for_third_test();
+        let answer: Answer = Default::default();
         header.increment_an_count();
         let message = Self::new(header,question,answer);
         message.serialize()
@@ -170,7 +208,8 @@ impl Message {
 #[cfg(test)]
 mod tests{
     use bytes::BytesMut;
-    use crate::message::{Label, Labels};
+    use crate::header::Header;
+    use crate::message::{Label, Labels, MessageBuilder};
 
     #[test]
     fn label_test() {
@@ -188,4 +227,32 @@ mod tests{
         let x = Labels::from_domain(domain);
         assert_eq!(x, expected)
     }
+
+    #[test]
+    fn test_builder() {
+        let parsed = Header {
+            id: 27901,
+            qr: false,
+            opcode: 0,
+            aa: false,
+            tc: false,
+            rd: true,
+            ra: false,
+            reserved: 0,
+            r_code: 0,
+            qd_count: 1,
+            an_count: 0,
+            ns_count: 0,
+            ar_count: 0,
+        };
+        let (id, opcode, rd) = parsed.get_id_opcode_rd();
+        let message = MessageBuilder::new()
+            .with_custom_id(id)
+            .with_custom_opcode(opcode)
+            .with_custom_rd(rd)
+            .finish();
+
+        println!("{:#?}", message)
+    }
 }
+

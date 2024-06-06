@@ -8,6 +8,16 @@ pub struct Question {
     ty: Ty,
     class: Class,
 }
+
+impl Default for Question {
+    fn default() -> Self {
+        Self {
+            name: Labels::from_bytes(b"\x0ccodecrafters\x02io"),
+            ty: Ty::A,
+            class: Class::IN,
+        }
+    }
+}
 #[allow(dead_code)]
 impl Question {
     pub fn new(buf: &[u8], ty: u16, class: u16) -> Self {
@@ -28,13 +38,7 @@ impl Question {
         buf
     }
 
-    pub fn for_question_test() -> Self {
-        Self {
-            name: Labels::from_bytes(b"\x0ccodecrafters\x02io"),
-            ty: Ty::A,
-            class: Class::IN,
-        }
-    }
+
 }
 
 #[cfg(test)]
@@ -44,7 +48,7 @@ mod test {
 
     #[test]
     fn test_serialize_question() {
-        let question = Question::for_question_test();
+        let question: Question = Default::default();
         let expected = b"\x0ccodecrafters\x02io\011";
         let _expected = BytesMut::from(&expected[..]);
         let got = question.serialize();
