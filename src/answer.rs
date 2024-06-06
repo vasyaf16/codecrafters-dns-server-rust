@@ -9,7 +9,7 @@ pub struct Answer {
     class: Class, // 16 bits
     ttl: u32,
     rd_length: u16,
-    r_data: u32 // 4 bits
+    r_data: Data // 4 bits
 }
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -34,9 +34,11 @@ impl Answer {
         let name = Labels::from_domain(name.as_ref());
         let ty = Ty::try_from(ty).unwrap();
         let class = Class::try_from(class).unwrap();
-        let r_data = 0x08080808u32;
-
-        let rd_length = 4;
+        let r_data = match class {
+            Class::IN => Data::A(data),
+            _ => unimplemented!()
+        };
+        let rd_length = r_data.len();
         Self {
             name,
             ty,
@@ -49,15 +51,16 @@ impl Answer {
     }
     pub fn serialize(self) -> BytesMut {
         let mut bytes = self.name.into_bytes_mut();
-        bytes.put_u16(1);
-        bytes.put_u16(1);
-        bytes.put_u32(60);
-        bytes.put_u16(4);
-        bytes.put_u32(0x08080808);
+        bytes.put_u8(0);
+        bytes.put_u16(self.ty as u16);
+        bytes.put_u16(self.class as u16);
+        bytes.put_u32(self.ttl);
+        bytes.put_u16(self.rd_length);
+        bytes.extend(self.r_data.as_bytes());
         bytes
     }
 }
-#[allow(dead_code, unused)]
+
 impl Data {
 
     pub fn len(&self) -> u16 {
