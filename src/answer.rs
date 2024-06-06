@@ -53,6 +53,8 @@ impl Answer {
         bytes.put_u16(self.class as u16);
         bytes.put_u32(self.ttl);
         bytes.put_u16(self.rd_length);
+        let rdata = self.r_data.as_bytes();
+        println!("rdata len is {:?}", rdata.len());
         bytes.extend(self.r_data.as_bytes());
         bytes
     }
