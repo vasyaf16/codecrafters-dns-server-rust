@@ -163,7 +163,6 @@ impl Message {
         let answer = Answer::for_third_test();
         header.increment_an_count();
         let message = Self::new(header,question,answer);
-        println!("{:?}", &message);
         message.serialize()
     }
 }
