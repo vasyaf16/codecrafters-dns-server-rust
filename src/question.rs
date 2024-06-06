@@ -2,7 +2,7 @@
 use bytes::{BufMut, BytesMut};
 use nom::AsBytes;
 use crate::message::{Class,Ty, Labels};
-
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Question {
     name: Labels,
     ty: Ty,

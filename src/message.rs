@@ -7,7 +7,7 @@ use crate::answer::Answer;
 use crate::header::Header;
 use crate::question::Question;
 
-#[allow(unused)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Message {
     header: Header,
     question: Question,
@@ -15,6 +15,7 @@ pub struct Message {
 }
 
 #[repr(u16)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Class {
     IN = 1,
     CS = 2,
@@ -37,6 +38,7 @@ impl TryFrom<u16> for Class {
 }
 
 #[repr(u16)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Ty {
     A = 1,
     NS = 2,
@@ -161,6 +163,7 @@ impl Message {
         let answer = Answer::for_third_test();
         header.increment_an_count();
         let message = Self::new(header,question,answer);
+        println!("{:?}", &message);
         message.serialize()
     }
 }

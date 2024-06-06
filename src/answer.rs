@@ -2,7 +2,7 @@
 
 use bytes::{BufMut, BytesMut};
 use crate::message::{Class, Label, Labels, Ty};
-
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Answer {
     name: Labels,
     ty: Ty, // 16 bits
@@ -12,6 +12,7 @@ pub struct Answer {
     r_data: Data // 4 bits
 }
 #[non_exhaustive]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Data {
     A(u32),
 }
