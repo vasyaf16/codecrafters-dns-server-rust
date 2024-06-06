@@ -21,14 +21,14 @@ fn main() {
 
                 let message = message::Message::deserialize(&buf[..size]);
                 let (id, opcode, rd ) = (message.id(), message.opcode(), message.rd());
-                let message = message::MessageBuilder::new()
+                let m = message::MessageBuilder::new()
                     .set_id(id)
                     .set_opcode(opcode)
                     .set_rd(rd)
                     .add_answers(message.answers)
                     .add_questions(message.questions)
                     .finish();
-                let response = message.serialize();
+                let response = m.serialize();
                 udp_socket
                     .send_to(&response, source)
                     .expect("Failed to send response");
