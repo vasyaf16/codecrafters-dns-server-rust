@@ -1,7 +1,6 @@
 #![allow(dead_code, unused)]
 
 use bytes::{BufMut, BytesMut};
-use nom::character::complete::u32;
 use crate::message::{Class, Label, Labels, Ty};
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Answer {
@@ -26,7 +25,9 @@ impl Answer {
         let class = 1;
         let ttl = 60;
         let data = 0x08080808u32;
-        Self::new(name,ty,class,ttl,data)
+        let x = Self::new(name,ty,class,ttl,data);
+        println!("{:?}", x);
+        x
     }
 
     pub fn new<A: AsRef<str>>(name: A, ty: u16, class: u16, ttl: u32, data: u32) -> Self {
@@ -37,7 +38,7 @@ impl Answer {
             Class::IN => Data::A(data),
             _ => unimplemented!()
         };
-        let rd_length = r_data.len() as u16;
+        let rd_length = r_data.len();
         Self {
             name,
             ty,
@@ -55,15 +56,14 @@ impl Answer {
         bytes.put_u32(self.ttl);
         bytes.put_u16(self.rd_length);
         let rdata = self.r_data.as_bytes();
-        println!("rdata len is {:?}", rdata.len());
-        bytes.put_u32(u32::from_le_bytes([rdata[0],rdata[1], rdata[2], rdata[3]]));
+        bytes.extend(self.r_data.as_bytes());
         bytes
     }
 }
 
 impl Data {
 
-    pub fn len(&self) -> usize {
+    pub fn len(&self) -> u16 {
         match *self {
             Data::A(_) => 4
         }

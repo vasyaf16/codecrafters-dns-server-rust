@@ -146,7 +146,7 @@ impl Message {
         }
     }
 
-    pub fn serialize(self) -> Bytes {
+    pub fn serialize(self) -> BytesMut {
         let (mut header, question, answer) = (
             self.header.serialize().unwrap(),
             self.question.serialize(),
@@ -154,9 +154,9 @@ impl Message {
         );
         header.extend_from_slice(&question);
         header.extend_from_slice(&answer);
-        header.freeze()
+        header
     }
-    pub fn produce_full_default_message() -> Bytes {
+    pub fn produce_full_default_message() -> BytesMut {
         let mut header = Header::default();
         let question = Question::for_question_test();
         header.increment_qd_count();
