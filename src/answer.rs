@@ -1,6 +1,7 @@
 #![allow(dead_code, unused)]
 
 use bytes::{BufMut, BytesMut};
+use nom::character::complete::u32;
 use crate::message::{Class, Label, Labels, Ty};
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Answer {
@@ -55,7 +56,7 @@ impl Answer {
         bytes.put_u16(self.rd_length);
         let rdata = self.r_data.as_bytes();
         println!("rdata len is {:?}", rdata.len());
-        bytes.extend(self.r_data.as_bytes());
+        bytes.put_u32(u32::from_le_bytes([rdata[0],rdata[1], rdata[2], rdata[3]]));
         bytes
     }
 }
