@@ -1,7 +1,7 @@
 
 use std::ops::{Deref, DerefMut};
 use anyhow::bail;
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{BufMut, BytesMut};
 use nom::AsBytes;
 use crate::answer::Answer;
 use crate::header::Header;
