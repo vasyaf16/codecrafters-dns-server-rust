@@ -1,7 +1,7 @@
 
 use std::ops::{Deref, DerefMut};
 use anyhow::bail;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use nom::AsBytes;
 use crate::answer::Answer;
 use crate::header::Header;
@@ -73,17 +73,43 @@ impl TryFrom<u16> for Ty {
 pub struct Label {
     val: BytesMut,
 }
-impl Label {
-    pub fn from_sequence(seq: &[u8]) -> Vec<Self> {
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct Labels(Vec<Label>);
+impl Deref for Labels {
+    type Target = Vec<Label>;
+
+    fn deref(&self) -> &Self::Target {
+        & self.0
+    }
+}
+
+impl DerefMut for Labels {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Labels {
+    pub fn from_bytes(seq: &[u8]) -> Self {
         let mut iter = seq.into_iter().copied();
         let mut vec = vec![];
         while let Some(len) = iter.next() {
             let label = Label::from(iter.by_ref().take(len as usize).collect::<Vec<_>>().as_bytes());
             vec.push(label)
         };
-        vec
+        Self(vec)
+    }
+
+    pub fn from_domain(domain: &str) -> Self {
+        Self(domain.split(".").map(|s| Label::from(s.as_bytes())).collect::<Vec<_>>())
+    }
+
+    pub fn into_bytes_mut(self) -> BytesMut {
+        self.0.iter().flat_map(|label| label.as_bytes()).collect()
     }
 }
+
+
 impl<'a> From<&'a [u8]> for Label {
     fn from(value: &'a [u8]) -> Self {
         let mut val = BytesMut::new();
@@ -109,23 +135,55 @@ impl DerefMut for Label {
 }
 
 impl Message {
-    pub fn for_second_test() -> BytesMut {
+
+    pub fn new(header: Header, question: Question, answer: Answer) -> Self {
+        Self {
+            header,
+            question,
+            answer,
+        }
+    }
+
+    pub fn serialize(self) -> Bytes {
+        let (mut header, question, answer) = (
+            self.header.serialize().unwrap(),
+            self.question.serialize(),
+            self.answer.serialize()
+        );
+        header.extend_from_slice(&question);
+        header.extend_from_slice(&answer);
+        header.freeze()
+    }
+    pub fn produce_full_default_message() -> Bytes {
         let mut header = Header::default();
         let question = Question::for_question_test();
         header.increment_qd_count();
-        let (mut header, question) = (header.serialize().unwrap(), question.serialize());
-        header.extend_from_slice(&question);
-        header
+        let answer = Answer::for_third_test();
+        header.increment_an_count();
+        let message = Self::new(header,question,answer);
+        message.serialize()
     }
 }
 
 #[cfg(test)]
 mod tests{
-    use crate::message::Label;
+    use bytes::BytesMut;
+    use crate::message::{Label, Labels};
 
     #[test]
     fn label_test() {
-        let v = Label::from_sequence(b"\x0ccodecrafters\x02io");
+        let v = Labels::from_bytes(b"\x0ccodecrafters\x02io");
         println!("{:?}", v);
+    }
+
+    #[test]
+    fn test_from_domain() {
+        let domain = "codecrafters.io";
+        let expected = Labels(vec![
+            Label{val: BytesMut::from("\x0ccodecrafters")},
+            Label{val: BytesMut::from("\x02io")}
+        ]);
+        let x = Labels::from_domain(domain);
+        assert_eq!(x, expected)
     }
 }

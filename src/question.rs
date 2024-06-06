@@ -1,10 +1,10 @@
 
 use bytes::{BufMut, BytesMut};
 use nom::AsBytes;
-use crate::message::{Class, Label, Ty};
+use crate::message::{Class,Ty, Labels};
 
 pub struct Question {
-    name: Vec<Label>,
+    name: Labels,
     ty: Ty,
     class: Class,
 }
@@ -12,7 +12,7 @@ pub struct Question {
 impl Question {
     pub fn new(buf: &[u8], ty: u16, class: u16) -> Self {
         Self {
-            name: Label::from_sequence(buf),
+            name: Labels::from_bytes(buf),
             ty: ty.try_into().unwrap(),
             class: class.try_into().unwrap(),
         }
@@ -30,7 +30,7 @@ impl Question {
 
     pub fn for_question_test() -> Self {
         Self {
-            name: Label::from_sequence(b"\x0ccodecrafters\x02io"),
+            name: Labels::from_bytes(b"\x0ccodecrafters\x02io"),
             ty: Ty::A,
             class: Class::IN,
         }

@@ -49,6 +49,10 @@ impl Header {
     pub fn increment_qd_count(&mut self) {
         self.qd_count += 1;
     }
+
+    pub fn increment_an_count(&mut self) {
+        self.an_count += 1;
+    }
     pub fn deserialize(v: &[u8]) -> anyhow::Result<Self> {
         if v.len() != 12 {
             bail!("headers len should be exactly 12 bytes long")
