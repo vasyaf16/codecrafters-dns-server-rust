@@ -52,8 +52,8 @@ impl Answer {
         bytes.put_u16(self.ty as u16);
         bytes.put_u16(self.class as u16);
         bytes.put_u32(self.ttl);
-        bytes.put_u16(self.rd_length);
-        bytes.put_u32(self.r_data);
+        bytes.put_u16(4);
+        bytes.put_u32(0x08080808);
         bytes
     }
 }
