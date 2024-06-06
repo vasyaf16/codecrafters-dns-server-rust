@@ -20,6 +20,14 @@ impl Default for Question {
 }
 #[allow(dead_code)]
 impl Question {
+
+    pub fn from_domain_name(name: &str) -> Self {
+        Self {
+            name: Labels::from_domain(name),
+            ty: Ty::A,
+            class : Class::IN
+        }
+    }
     pub fn new(buf: &[u8], ty: u16, class: u16) -> Self {
         Self {
             name: Labels::from_bytes(buf),
@@ -30,7 +38,6 @@ impl Question {
     pub fn serialize(self) -> BytesMut {
         let mut buf = BytesMut::new();
         let v = self.name;
-        // let _val = v.into_iter().flat_map(|l| l.as_bytes()).collect::<Vec<_>>();
         buf.extend(v.iter().flat_map(|l| l.as_bytes()));
         buf.put_u8(0);
         buf.put_u16(self.ty as u16);
@@ -38,6 +45,35 @@ impl Question {
         buf
     }
 
+    pub fn deserialize_inner(bytes: &[u8]) -> (Self, usize) {
+        let mut buf = bytes.into_iter().copied();
+        let labels = buf
+            .by_ref()
+            .take_while(|&c| {
+                c != b'\0' })
+            .collect::<BytesMut>();
+        let name = Labels::from_bytes(&labels);
+        let t = [buf.next().unwrap(), buf.next().unwrap()];
+        let ty = u16::from_be_bytes(t);
+        let ty = Ty::try_from(ty).unwrap();
+        let c = [buf.next().unwrap(), buf.next().unwrap()];
+        let class = u16::from_be_bytes(c);
+        let class = Class::try_from(class).unwrap();
+        let len = labels.len() + 5;
+        (Self {
+            name,
+            ty,
+            class
+        }, len )
+    }
+
+    pub fn deserialize(bytes : &[u8]) -> Self {
+        Self::deserialize_inner(bytes).0
+    }
+
+    pub fn domain(&self) -> String {
+        self.name.to_string()
+    }
 
 }
 
@@ -53,5 +89,13 @@ mod test {
         let _expected = BytesMut::from(&expected[..]);
         let got = question.serialize();
         println!("{:?}", got)
+    }
+
+    #[test]
+    fn test_deserialize_question() {
+        let val = b"\x0ccodecrafters\x02io\0\x00\x01\x00\x01somebullshit";
+        let q = Question::deserialize_inner(val);
+        println!("{:#?}", q)
+
     }
 }

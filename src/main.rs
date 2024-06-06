@@ -19,12 +19,14 @@ fn main() {
             Ok((size, source)) => {
                 println!("Received {} bytes from {}", size, source);
 
-                let parsed = header::Header::deserialize(&buf[..12]).unwrap();
-                let (id, opcode, rd) = parsed.get_id_opcode_rd();
+                let message = message::Message::deserialize(&buf[..size]);
+                let (id, opcode, rd ) = (message.id(), message.opcode(), message.rd());
                 let message = message::MessageBuilder::new()
-                    .with_custom_id(id)
-                    .with_custom_opcode(opcode)
-                    .with_custom_rd(rd)
+                    .set_id(id)
+                    .set_opcode(opcode)
+                    .set_rd(rd)
+                    .add_answers(message.answers)
+                    .add_questions(message.questions)
                     .finish();
                 let response = message.serialize();
                 udp_socket

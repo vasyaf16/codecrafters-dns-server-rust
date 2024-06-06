@@ -29,6 +29,13 @@ impl Default for Header {
 
 impl Header {
 
+    pub fn qd(&self) -> usize {
+        self.qd_count as usize
+    }
+
+    pub fn an(&self) -> usize {
+        self.an_count as usize
+    }
     pub fn set_id(&mut self, id: u16) {
         self.id = id
     }

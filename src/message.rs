@@ -10,47 +10,195 @@ use crate::question::Question;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Message {
     header: Header,
-    question: Question,
-    answer: Answer,
+    pub(crate) questions: Questions,
+    pub(crate) answers: Answers,
+}
+
+impl Default for Message {
+    fn default() -> Self {
+        let header = Header::default();
+        Self {header,
+            questions: Default::default(),
+            answers: Default::default()}
+    }
+}
+
+impl Message {
+    #[allow(unused)]
+    pub fn new(header: Header, questions: Vec<Question>, answers: Vec<Answer>) -> Self {
+        Self {
+            header,
+            questions: Questions(questions),
+            answers: Answers(answers),
+        }
+    }
+
+    pub fn serialize(self) -> BytesMut {
+        let (mut header, question, answer) = (
+            self.header.serialize().unwrap(),
+            self.questions.serialize(),
+            self.answers.serialize()
+        );
+        header.extend_from_slice(&question);
+        header.extend_from_slice(&answer);
+        header
+    }
+
+    pub fn deserialize(bytes: &[u8]) -> Self {
+        let header = Header::deserialize(&bytes[..12]).unwrap();
+        let (qn, an) = (header.qd(), header.an());
+        let mut len = 12usize;
+        let mut question = Questions::default();
+        for _ in 0..qn {
+            let (q, l) = Question::deserialize_inner(&bytes[len..]);
+            len += l;
+            question.push(q);
+        }
+        let mut answer = Answers::default();
+        for _ in 0..an {
+            let (a, l) = Answer::deserialize(&bytes[len..]);
+            len += l;
+            answer.push(a);
+        }
+
+        Self {
+            header,
+            questions: question,
+            answers: answer,
+        }
+    }
+    pub fn id(&self) -> u16 {
+        self.header.id
+    }
+
+    pub fn opcode(&self) -> u8{
+        self.header.opcode
+    }
+
+    pub fn rd(&self) -> bool {
+        self.header.rd
+    }
+
+}
+
+
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
+pub struct Answers(Vec<Answer>);
+
+impl Deref for Answers {
+    type Target = Vec<Answer>;
+
+    fn deref(&self) -> &Self::Target {
+        & self.0
+    }
+}
+
+impl DerefMut for Answers {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+impl IntoIterator for Answers {
+    type Item = Answer;
+    type IntoIter = std::vec::IntoIter<Answer>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+impl Answers {
+    pub fn serialize(self) -> BytesMut {
+        self.0.into_iter().flat_map(|a| a.serialize()).collect()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
+pub struct Questions(Vec<Question>);
+
+impl Deref for Questions {
+    type Target = Vec<Question>;
+
+    fn deref(&self) -> &Self::Target {
+        & self.0
+    }
+}
+
+impl DerefMut for Questions {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl IntoIterator for Questions {
+    type Item = Question;
+    type IntoIter = std::vec::IntoIter<Question>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl Questions {
+    pub fn serialize(self) -> BytesMut {
+        self.0.into_iter().flat_map(|q| q.serialize()).collect()
+    }
 }
 
 pub struct MessageBuilder {
     message: Message
 }
-
+#[allow(unused)]
 impl MessageBuilder {
     pub fn new() -> Self {
         Self {message: Default::default()}
     }
-    pub fn with_custom_id(mut self, id:u16) -> Self {
+    pub fn set_id(mut self, id:u16) -> Self {
         self.message.header.set_id(id);
         self
     }
-    pub fn with_custom_opcode(mut self, opcode: u8) -> Self {
+    pub fn set_opcode(mut self, opcode: u8) -> Self {
         self.message.header.set_opcode(opcode);
         self
     }
 
-    pub fn with_custom_rd(mut self, rd: bool) -> Self {
+    pub fn set_rd(mut self, rd: bool) -> Self {
         self.message.header.set_rd(rd);
         self
     }
 
+    pub fn add_answer(mut self, answer: Answer) -> Self {
+        self.message.answers.push(answer);
+        self.message.header.increment_an_count();
+        self
+    }
+
+    pub fn add_question(mut self, question: Question) -> Self {
+        self.message.questions.push(question);
+        self.message.header.increment_qd_count();
+        self
+    }
+
+    pub fn add_questions<I: IntoIterator<Item = Question>>(mut self, iter: I) -> Self {
+        for q in iter {
+            self.message.questions.push(q);
+            self.message.header.increment_qd_count();
+        }
+        self
+    }
+
+    pub fn add_answers<I: IntoIterator<Item = Answer>>(mut self, iter: I) -> Self {
+        for a in iter {
+            self.message.answers.push(a);
+            self.message.header.increment_an_count();
+        }
+        self
+    }
     pub fn finish(self) -> Message {
         self.message
     }
 }
 
-impl Default for Message {
-    fn default() -> Self {
-        let mut header = Header::default();
-        let question = Question::default();
-        let answer = Answer::default();
-        header.increment_qd_count();
-        header.increment_an_count();
-        Self {header,question,answer}
-    }
-}
+
 
 #[repr(u16)]
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -129,7 +277,17 @@ impl DerefMut for Labels {
     }
 }
 
+impl Label {
+    pub fn to_string(&self) -> String {
+        String::from_utf8_lossy(&self.val[1..]).to_string()
+    }
+}
+
 impl Labels {
+
+    pub fn to_string(&self) -> String {
+        self.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(".")
+    }
     pub fn from_bytes(seq: &[u8]) -> Self {
         let mut iter = seq.into_iter().copied();
         let mut vec = vec![];
@@ -174,42 +332,16 @@ impl DerefMut for Label {
     }
 }
 
-impl Message {
 
-    pub fn new(header: Header, question: Question, answer: Answer) -> Self {
-        Self {
-            header,
-            question,
-            answer,
-        }
-    }
-
-    pub fn serialize(self) -> BytesMut {
-        let (mut header, question, answer) = (
-            self.header.serialize().unwrap(),
-            self.question.serialize(),
-            self.answer.serialize()
-        );
-        header.extend_from_slice(&question);
-        header.extend_from_slice(&answer);
-        header
-    }
-    pub fn produce_full_default_message() -> BytesMut {
-        let mut header = Header::default();
-        let question: Question = Default::default();
-        header.increment_qd_count();
-        let answer: Answer = Default::default();
-        header.increment_an_count();
-        let message = Self::new(header,question,answer);
-        message.serialize()
-    }
-}
 
 #[cfg(test)]
 mod tests{
     use bytes::BytesMut;
+    use crate::answer::Answer;
     use crate::header::Header;
-    use crate::message::{Label, Labels, MessageBuilder};
+    use crate::message;
+    use crate::message::{Label, Labels, Message, MessageBuilder};
+    use crate::question::Question;
 
     #[test]
     fn label_test() {
@@ -247,12 +379,49 @@ mod tests{
         };
         let (id, opcode, rd) = parsed.get_id_opcode_rd();
         let message = MessageBuilder::new()
-            .with_custom_id(id)
-            .with_custom_opcode(opcode)
-            .with_custom_rd(rd)
+            .set_id(id)
+            .set_opcode(opcode)
+            .set_rd(rd)
             .finish();
 
         println!("{:#?}", message)
+    }
+
+    #[test]
+    fn ser_de() {
+        let message = message::MessageBuilder::new()
+            .set_id(1488)
+            .set_opcode(228)
+            .set_rd(true)
+            .finish();
+        let ser = message.serialize();
+        let de = Message::deserialize(&ser);
+        println!("{:#?}", de);
+    }
+
+    #[test]
+    fn label_to_string() {
+        let label = Labels::from_domain("youtube.com");
+        let v : String = label.to_string();
+        assert_eq!(v.as_str(), "youtube.com")
+    }
+
+    #[test]
+    fn test_multiple_ans() {
+        let message = MessageBuilder::new()
+            .set_id(1488)
+            .add_answer(Answer::from_domain_name("hello.world"))
+            .add_answer(Answer::from_domain_name("i.like.big.cocks"))
+            .add_answer(Answer::from_domain_name("suck.some.dick"))
+            .add_question(Question::from_domain_name("i.am.gay"))
+            .finish();
+        let cloned = message.clone();
+        let from_iter = MessageBuilder::new()
+            .set_id(228)
+            .add_answers(cloned.answers)
+            .finish();
+        assert_eq!(from_iter.header.an(), 3);
+        assert_eq!(message.answers, from_iter.answers)
     }
 }
 
