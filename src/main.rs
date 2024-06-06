@@ -1,5 +1,6 @@
 // Uncomment this block to pass the first stage
 use std::net::UdpSocket;
+use crate::answer::Answer;
 
 mod header;
 mod question;
@@ -25,6 +26,7 @@ fn main() {
                     .set_id(id)
                     .set_opcode(opcode)
                     .set_rd(rd)
+                    .add_answer(Answer::default())
                     .add_answers(message.answers)
                     .add_questions(message.questions)
                     .finish();
