@@ -18,8 +18,10 @@ fn main() {
         match udp_socket.recv_from(&mut buf) {
             Ok((size, source)) => {
                 println!("Received {} bytes from {}", size, source);
-                let parsed = header::Header::deserialize(&buf[..12]).unwrap();
-                println!("{:#?}", parsed);
+                if size > 0 {
+                    let parsed = header::Header::deserialize(&buf[..12]).unwrap();
+                    println!("{:#?}", parsed);
+                }
                 let response = message::Message::produce_full_default_message();
                 println!("{:?}", response);
                 udp_socket
