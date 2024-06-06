@@ -9,7 +9,7 @@ pub struct Answer {
     class: Class, // 16 bits
     ttl: u32,
     rd_length: u16,
-    r_data: Data // 4 bits
+    r_data: u32 // 4 bits
 }
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -34,11 +34,9 @@ impl Answer {
         let name = Labels::from_domain(name.as_ref());
         let ty = Ty::try_from(ty).unwrap();
         let class = Class::try_from(class).unwrap();
-        let r_data = match class {
-            Class::IN => Data::A(data),
-            _ => unimplemented!()
-        };
-        let rd_length = r_data.len();
+        let r_data = 0x08080808u32;
+
+        let rd_length = 4;
         Self {
             name,
             ty,
@@ -55,12 +53,11 @@ impl Answer {
         bytes.put_u16(self.class as u16);
         bytes.put_u32(self.ttl);
         bytes.put_u16(self.rd_length);
-        let rdata = self.r_data.as_bytes();
-        bytes.extend(self.r_data.as_bytes());
+        bytes.put_u32(self.r_data);
         bytes
     }
 }
-
+#[allow(dead_code, unused)]
 impl Data {
 
     pub fn len(&self) -> u16 {
