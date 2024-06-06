@@ -26,7 +26,7 @@ fn main() {
                     .set_id(id)
                     .set_opcode(opcode)
                     .set_rd(rd)
-                    .add_answer(Answer::default())
+                    .add_answer(Answer::from_domain_name(&message.questions[0].domain()))
                     .add_answers(message.answers)
                     .add_questions(message.questions)
                     .finish();
