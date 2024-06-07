@@ -72,6 +72,7 @@ impl Message {
 
     pub fn split(self) -> Vec<Self> {
         self.questions.into_iter().map(|i| {
+            println!("question : {:?}", i);
             let mut m = Message::new(self.header.clone(), vec![i], vec![]);
             m.header.qd_count = 1;
             m.header.an_count = 0;

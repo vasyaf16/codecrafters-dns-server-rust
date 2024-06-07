@@ -40,9 +40,10 @@ fn main() {
                 println!("Received {} bytes from {}", size, source);
 
                 let message = Message::deserialize(&buf[..size]);
-                println!("{:?}", message);
+                println!("Recvd message : {:?}", message);
                 let response = if is_forwarded_server {
                     let m = forwarding_server(&udp_socket, message, args.resolver.unwrap());
+                    println!("response message : {:?}", message);
                     m.serialize()
                 } else {
                     let (id, opcode, rd) = (message.id(), message.opcode(), message.rd());
