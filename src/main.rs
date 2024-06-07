@@ -43,7 +43,7 @@ fn main() {
                 println!("Recvd message : {:?}", message);
                 let response = if is_forwarded_server {
                     let m = forwarding_server(&udp_socket, message, args.resolver.unwrap());
-                    println!("response message : {:?}", message);
+                    println!("response message : {:?}", m);
                     m.serialize()
                 } else {
                     let (id, opcode, rd) = (message.id(), message.opcode(), message.rd());
