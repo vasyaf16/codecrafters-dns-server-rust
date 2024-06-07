@@ -80,8 +80,11 @@ impl Message {
         }).collect()
     }
     pub fn join(v: Vec<Self>) -> Self {
+        let mut header = v[0].header.clone();
+        header.an_count = 0;
+        header.qd_count = 0;
         MessageBuilder::new()
-            .set_header(v[0].header.clone())
+            .set_header(header)
             .add_answers(v.iter().flat_map(|m| m.answers.clone()))
             .add_questions(v.iter().flat_map(|m| m.questions.clone()))
             .finish()
