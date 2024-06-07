@@ -20,7 +20,7 @@ fn main() {
         match udp_socket.recv_from(&mut buf) {
             Ok((size, source)) => {
                 println!("Received {} bytes from {}", size, source);
-                let b = BytesMut::from(buf[..size]);
+                let b = BytesMut::from(&buf[..size]);
                 println!("{:?}", b);
                 let message = message::Message::deserialize(&buf[..size]);
                 let (id, opcode, rd ) = (message.id(), message.opcode(), message.rd());
