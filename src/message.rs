@@ -47,17 +47,17 @@ impl Message {
     pub fn deserialize(bytes: &[u8]) -> Self {
         let header = Header::deserialize(&bytes[..12]).unwrap();
         let (qn, an) = (header.qd(), header.an());
-        let mut len = 12usize;
+        let mut start = 12usize;
         let mut question = Questions::default();
         for _ in 0..qn {
-            let (q, l) = Question::deserialize_inner(&bytes[len..]);
-            len += l;
+            let (q, end) = Question::deserialize(bytes, start);
+            start += end;
             question.push(q);
         }
         let mut answer = Answers::default();
         for _ in 0..an {
-            let (a, l) = Answer::deserialize(&bytes[len..]);
-            len += l;
+            let (a, end) = Answer::deserialize(bytes, start);
+            start += end;
             answer.push(a);
         }
 
@@ -83,7 +83,13 @@ impl Message {
 
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
-pub struct Answers(Vec<Answer>);
+pub struct Answers(pub Vec<Answer>);
+
+impl FromIterator<Answer> for Answers {
+    fn from_iter<T: IntoIterator<Item=Answer>>(iter: T) -> Self {
+        Self(iter.into_iter().collect::<Vec<_>>())
+    }
+}
 
 impl Deref for Answers {
     type Target = Vec<Answer>;
@@ -107,6 +113,10 @@ impl IntoIterator for Answers {
     }
 }
 impl Answers {
+
+    pub fn from_questions<'a,Q: IntoIterator<Item = &'a Question>>(questions: Q) -> Self {
+        questions.into_iter().map(|q| Answer::from_domain_name(&q.domain())).collect()
+    }
     pub fn serialize(self) -> BytesMut {
         self.0.into_iter().flat_map(|a| a.serialize()).collect()
     }
@@ -126,6 +136,15 @@ impl Deref for Questions {
 impl DerefMut for Questions {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+impl <'a >IntoIterator for &'a Questions {
+    type Item = &'a Question;
+    type IntoIter = std::slice::Iter<'a, Question>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }
 

@@ -1,6 +1,6 @@
 // Uncomment this block to pass the first stage
 use std::net::UdpSocket;
-use crate::answer::Answer;
+use crate::message::Answers;
 
 mod header;
 mod question;
@@ -26,8 +26,7 @@ fn main() {
                     .set_id(id)
                     .set_opcode(opcode)
                     .set_rd(rd)
-                    .add_answer(Answer::from_domain_name(&message.questions[0].domain()))
-                    .add_answers(message.answers)
+                    .add_answers(Answers::from_questions(&message.questions))
                     .add_questions(message.questions)
                     .finish();
                 let response = m.serialize();
