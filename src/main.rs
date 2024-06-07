@@ -13,6 +13,7 @@ mod cli;
 fn forwarding_server(udp_socket: &UdpSocket, message: Message, socket_addr: SocketAddrV4) -> Message {
     Message::join(message.split().into_iter().map(|m|
         {
+            println!("{:?}", m);
             let s = m.serialize();
             udp_socket.send_to(&s, socket_addr).expect("Failed to send response");
             let mut buf = [0; 512];
@@ -39,6 +40,7 @@ fn main() {
                 println!("Received {} bytes from {}", size, source);
 
                 let message = Message::deserialize(&buf[..size]);
+                println!("{:?}", message);
                 let response = if is_forwarded_server {
                     let m = forwarding_server(&udp_socket, message, args.resolver.unwrap());
                     m.serialize()
