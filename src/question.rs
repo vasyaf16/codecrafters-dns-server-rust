@@ -1,3 +1,5 @@
+
+
 use bytes::{BufMut, BytesMut};
 use nom::AsBytes;
 use crate::message::{Class, Ty, Labels};
@@ -46,48 +48,21 @@ impl Question {
     }
 
     pub fn deserialize(bytes: &[u8], start: usize) -> (Self, usize) {
-
-
-        let is_compressed = (bytes[start] & 0b1100_0000) == 0b1100_0000;
-        let (labels, end) = if is_compressed {
-                let offset = u16::from_be_bytes([bytes[start], bytes[start+1]]);
-                let offset = offset ^ 0b1100_0000_0000_0000u16;
-                let l = bytes[offset as usize..]
-                    .iter()
-                    .copied()
-                    .take_while(|&c| {
-                        c != b'\0'
-                    })
-                    .collect::<BytesMut>();
-                let e = start + 1;
-            (l, e)
-        } else {
-            let l =
-                bytes[start..]
-                    .iter()
-                    .copied()
-                    .take_while(|&c| {
-                        c != b'\0'
-                    })
-                    .collect::<BytesMut>();
-            let e = start + l.len();
-            (l, e)
-        };
-        let name = Labels::from_bytes(&labels);
-        let t = [bytes[end+1], bytes[end+2]];
+        let (name, end) = Labels::parse(bytes, start);
+        // println!("{end}");
+        let t = [bytes[end], bytes[end+1]];
         let ty = u16::from_be_bytes(t);
         let ty = Ty::try_from(ty).unwrap();
-        let c = [bytes[end+3], bytes[end+4]];
+        let c = [bytes[end + 2], bytes[end + 3]];
         let class = u16::from_be_bytes(c);
         let class = Class::try_from(class).unwrap();
-        let len = end + 5;
+        let len = end + 4;
         (Self {
             name,
             ty,
             class,
         }, len)
     }
-
 
 
     pub fn domain(&self) -> String {
@@ -134,5 +109,13 @@ mod test {
         assert_eq!(xor3, 3);
         assert_eq!(xor4, 4);
         assert_eq!(xor5, 10)
+    }
+
+    #[test]
+    fn test_de() {
+        let q = Question::from_domain_name("hello.world.i.am.here");
+        let buf = q.serialize();
+        let (bytes, len) = Question::deserialize(&buf, 0);
+        assert_eq!(len, buf.len())
     }
 }

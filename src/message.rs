@@ -49,9 +49,11 @@ impl Message {
         let (qn, an) = (header.qd(), header.an());
         let mut start = 12usize;
         let mut question = Questions::default();
+        // println!("{:?}", header);
         for _ in 0..qn {
             let (q, end) = Question::deserialize(bytes, start);
-            start += end;
+            // println!("{:#?} \n end is {end}", q);
+            start = end;
             question.push(q);
         }
         let mut answer = Answers::default();
@@ -280,7 +282,7 @@ impl TryFrom<u16> for Ty {
 pub struct Label {
     val: BytesMut,
 }
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Default)]
 pub struct Labels(Vec<Label>);
 impl Deref for Labels {
     type Target = Vec<Label>;
@@ -290,13 +292,61 @@ impl Deref for Labels {
     }
 }
 
+impl Labels {
+    pub fn parse(buf: &[u8], mut start: usize) -> (Labels, usize) {
+        // println!("default start is {start}");
+        let mut v : Labels = Default::default();
+        loop {
+            // println!("start is {start}");
+            // println!("byte is {:<02x}", buf[start]);
+            match buf[start] {
+                zero if zero == b'\0' => {
+                    if let Some(byte) = buf.get(start + 1) {
+                      if *byte  == b'\0' {
+                          start += 1;
+                      }
+                    };
+                    break
+                }
+                x if x & 0b1100_0000 == 0b1100_0000 => {
+                    let ptr = u16::from_be_bytes([
+                        buf[start],
+                        buf[start+1],
+                    ]);
+                    let ptr = ptr ^ 0b11_00_0000_0000_0000u16;
+                    // println!("{ptr}");
+                    v.extend_from_slice(Self::parse(buf, ptr as usize).0.iter().as_slice());
+                    // println!("{:?}", v);
+                    start += 2;
+                },
+                len => {
+                    let end = start + len as usize + 1;
+                    v.push(Label::from(&buf[start+1..end]));
+                    start += len as usize + 1;
+                }
+
+            }
+        }
+        (v , start)
+
+    }
+}
+
 impl DerefMut for Labels {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
+
 impl Label {
+    #[allow(dead_code)]
+    pub fn len(&self) -> usize {
+        self.val[0] as usize
+    }
+
+
+
     pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.val[1..]).to_string()
     }
@@ -311,6 +361,9 @@ impl Labels {
         let mut iter = seq.into_iter().copied();
         let mut vec = vec![];
         while let Some(len) = iter.next() {
+            if len == b'0' {
+                break
+            }
             let label = Label::from(iter.by_ref().take(len as usize).collect::<Vec<_>>().as_bytes());
             vec.push(label)
         };
@@ -332,7 +385,7 @@ impl<'a> From<&'a [u8]> for Label {
         let mut val = BytesMut::new();
         let len = value.len() as u8;
         val.put_u8(len);
-        val.extend_from_slice(value);
+        val.extend_from_slice(&value[..len as usize]);
         Self { val }
     }
 }
@@ -355,7 +408,7 @@ impl DerefMut for Label {
 
 #[cfg(test)]
 mod tests{
-    use bytes::BytesMut;
+    use bytes::{BufMut, BytesMut};
     use crate::answer::Answer;
     use crate::header::Header;
     use crate::message;
@@ -441,6 +494,32 @@ mod tests{
             .finish();
         assert_eq!(from_iter.header.an(), 3);
         assert_eq!(message.answers, from_iter.answers)
+    }
+
+    #[test]
+    fn testing_stuff() {
+        let l = Labels::from_domain("youtube.com");
+        let mut l = l.into_bytes_mut();
+        l.put_u8(0);
+        println!("{l:?}")
+    }
+
+    #[test]
+    fn i_guess_it_broken() {
+        let val = b"\x03abc\x11longassdomainname\x03com\0\x03def\xC0\x04\x05hello\0";
+        let (l, end) = Labels::parse(val, 0);
+        let _bytes = BytesMut::from(&val[end+1..]);
+        let (a, b) = Labels::parse(val, end + 1);
+        println!("{l:?}, rest is {:?}", a)
+    }
+
+    #[test]
+    fn de(){
+        let val = b"\xbf9\x01\0\0\x02\0\0\0\0\0\0\x03abc\x11longassdomainname\x03com\0\0\x01\0\x01\x03def\xc0\x10\0\x01\0\x01";
+        let bytes = BytesMut::from(&val[49..]);
+        println!("{:?}", bytes);
+        let de = Message::deserialize(val);
+        println!("{de:?}");
     }
 }
 

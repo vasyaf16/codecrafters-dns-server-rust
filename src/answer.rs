@@ -1,7 +1,7 @@
-#![allow(dead_code, unused)]
+
 
 use bytes::{BufMut, BytesMut};
-use crate::message::{Answers, Class, Label, Labels, Ty};
+use crate::message::{Class, Labels, Ty};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Answer {
@@ -120,7 +120,6 @@ impl Answer {
         let ty = Ty::try_from(ty).unwrap();
         let class = u16::from_be_bytes([bytes[end + 3], bytes[end + 4]]);
         let class = Class::try_from(class).unwrap();
-        let len = end + 5;
         let ttl = u32::from_be_bytes([
             bytes[end + 5],
             bytes[end + 6],
@@ -135,7 +134,7 @@ impl Answer {
             bytes[end + 14],
         ]));
         let l = end + 15;
-        ;
+
         (Self {
             name,
             ty,
@@ -145,7 +144,7 @@ impl Answer {
             r_data,
         }, l)
     }
-
+    #[allow(dead_code)]
     pub fn domain(&self) -> String {
         self.name.to_string()
     }
