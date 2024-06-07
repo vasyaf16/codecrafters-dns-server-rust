@@ -13,7 +13,7 @@ mod cli;
 fn forwarding_server(udp_socket: &UdpSocket, message: Message, socket_addr: SocketAddrV4) -> Message {
     Message::join(message.split().into_iter().map(|m|
         {
-            println!("{:?}", m);
+            println!("forwarding message : {:?}", m);
             let s = m.serialize();
             udp_socket.send_to(&s, socket_addr).expect("Failed to send response");
             let mut buf = [0; 512];
