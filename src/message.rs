@@ -69,6 +69,23 @@ impl Message {
             answers: answer,
         }
     }
+
+    pub fn split(self) -> Vec<Self> {
+        self.questions.into_iter().map(|i| {
+            let mut m = Message::new(self.header.clone(), vec![i], vec![]);
+            m.header.qd_count = 1;
+            m.header.an_count = 0;
+            m
+        }).collect()
+    }
+    pub fn join(v: Vec<Self>) -> Self {
+        MessageBuilder::new()
+            .set_header(v[0].header.clone())
+            .add_answers(v.iter().flat_map(|m| m.answers.clone()))
+            .add_questions(v.iter().flat_map(|m| m.questions.clone()))
+            .finish()
+
+    }
     pub fn id(&self) -> u16 {
         self.header.id
     }
@@ -196,6 +213,11 @@ impl MessageBuilder {
     pub fn add_question(mut self, question: Question) -> Self {
         self.message.questions.push(question);
         self.message.header.increment_qd_count();
+        self
+    }
+
+    pub fn set_header(mut self, header: Header) -> Self {
+        self.message.header = header;
         self
     }
 
